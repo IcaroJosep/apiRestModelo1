@@ -68,6 +68,7 @@
 	</section>
 	<section name="MavenProjectImportWizardPage">
 		<list key="rootDirectory">
+			<item value="/home/icaro/Área de trabalho/cleamMvc/apiRestModelo1/28-RestTamplade-exchenge"/>
 			<item value="/home/icaro/Área de trabalho/28-RestTamplade-exchenge"/>
 		</list>
 		<list key="projectNameTemplate">
