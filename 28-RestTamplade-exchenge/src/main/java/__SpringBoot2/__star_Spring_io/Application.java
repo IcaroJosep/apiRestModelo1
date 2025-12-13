@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class Application {
 
+	
     // Método principal - ponto de entrada da aplicação Java
     // Executado pela JVM ao iniciar o programa
     public static void main(String[] args) {
