@@ -37,6 +37,7 @@ public class AnimeServices {
     // Repositório para operações de banco de dados
     private final AnimeRepository animeRepository;
     
+    
     // Mapper para conversão entre DTO e entidade
     private final AnimeMapper animeMapper;
     
