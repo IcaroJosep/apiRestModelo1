@@ -1,10 +1,16 @@
 // Pacote para classes de serviço (camada de negócio)
 package __SpringBoot2.__star_Spring_io.services;
 
+import java.util.Optional;
+
 // Importações Spring Data para paginação
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 
 // Importações de domínio, exceções, mappers e repositórios
 import __SpringBoot2.__star_Spring_io.dominio.Anime;
@@ -12,6 +18,7 @@ import __SpringBoot2.__star_Spring_io.exception.BedRequestException;
 import __SpringBoot2.__star_Spring_io.mapper.AnimeMapper;
 import __SpringBoot2.__star_Spring_io.repository.AnimeRepository;
 import __SpringBoot2.__star_Spring_io.requests.AnimePostRequestBody;
+import __SpringBoot2.__star_Spring_io.requests.AnimeResponse;
 import __SpringBoot2.__star_Spring_io.seguranca.PageValid;
 import __SpringBoot2.__star_Spring_io.seguranca.PageableValidation;
 import __SpringBoot2.__star_Spring_io.seguranca.Sanatizador;
@@ -23,6 +30,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AnimeServices {
+	@PersistenceContext
+	private EntityManager entityManager;
+
     
     // Repositório para operações de banco de dados
     private final AnimeRepository animeRepository;
@@ -31,7 +41,7 @@ public class AnimeServices {
     private final AnimeMapper animeMapper;
     
     // ========== LISTA TODOS OS ANIMES (COM PAGINAÇÃO) ==========
-    public Page<Anime> listAll(Pageable pageable) {
+    public Page<AnimeResponse> listAll(Pageable pageable) {
         // Valida e sanitiza parâmetros de paginação
         Pageable pageableRequest = PageableValidation.validateAndSanitize(pageable);
         
@@ -39,12 +49,12 @@ public class AnimeServices {
         Page<Anime> pSani = PageValid.ValidaSanitizaPageAnime(
             animeRepository.findAll(pageableRequest)
         );
-        
-        return pSani;
+        	
+        return pSani.map(animeMapper::toAnimeResponse);
     }
     
     // ========== BUSCA ANIMES POR NOME ==========
-    public Page<Anime> findByName(Pageable pageable, String name, boolean comtem) {
+    public Page<AnimeResponse> findByName(Pageable pageable, String name, boolean comtem) {
         // Valida e sanitiza paginação
         Pageable pageableRequest = PageableValidation.validateAndSanitize(pageable);
         
@@ -64,19 +74,18 @@ public class AnimeServices {
             pSani = PageValid.ValidaSanitizaPageAnime(
                 animeRepository.findByNameContaining(nSani, pageableRequest)
             );
-            return pSani;
+            return pSani.map(animeMapper::toAnimeResponse);
         }
         
         // Busca nome EXATO (equals)
         pSani = PageValid.ValidaSanitizaPageAnime(
             animeRepository.findByName(nSani, pageableRequest)
         );
-        
-        return pSani;
+        return pSani.map(animeMapper::toAnimeResponse);
     }
     
     // ========== SALVA NOVO ANIME ==========
-    public Anime save(AnimePostRequestBody animePostRequestBody) {
+    public AnimeResponse save(AnimePostRequestBody animePostRequestBody) {
         // Cria novo DTO para dados sanitizados
         AnimePostRequestBody dtoSanatizado = new AnimePostRequestBody();
         
@@ -100,8 +109,50 @@ public class AnimeServices {
         Anime animeSalvo = animeRepository.save(animeInp);
         
         // Sanitiza anime retornado do banco (segurança extra)
-        return Sanatizador.saniAnime(animeSalvo);
+        return animeMapper.toAnimeResponse(animeSalvo);
     }
+    
+ // ========== DELETA UM ANIME POR ID ==========
+    public AnimeResponse deleteById (long id){
+    	
+    	// Busca anime pelo ID no banco de dados
+    	Optional<Anime> caixa = animeRepository.findById(id);
+    	
+    	// Extrai anime do Optional ou lança exceção se não encontrado
+    	Anime anime = caixa.orElseThrow(() -> new BedRequestException("id nao emcomtrado"));
+    	
+    	// Remove anime do banco de dados
+    	animeRepository.delete(anime);
+    	    	
+    	// Converte entidade para DTO de resposta e retorna
+    	return animeMapper.toAnimeResponse(anime);
+    }
+    
+    // ========== ATUALIZA NOME DE UM ANIME ==========
+    @Transactional /*Cria um proxy em volta do método para abrir e controlar uma transação.
+    Dentro dessa transação, existe um EntityManager (contexto de persistência) gerenciado pelo Hibernate/JPA,
+    que rastreia e sincroniza as entidades com o banco ao final.
+    O uso de @Transactional garante que todas as operações no método sejam atômicas.*/
+    public AnimeResponse updateByName(Long id, String newName) {
+    	
+    	// Busca anime pelo ID ou lança exceção se não encontrado
+    	Anime anime = animeRepository.findById(id).orElseThrow(() -> new BedRequestException("id nao encomtrado"));
+    	
+    	// Sanitiza novo nome para evitar injeção/ataques
+    	String nameSani = Sanatizador.saniString(newName);
+    	
+    	// Valida nome após sanitização
+    	if (nameSani == null || nameSani.trim().isEmpty()) {
+    		throw new BedRequestException("nome invalido");
+		}
+    	
+    	// Atualiza nome do anime (alteração automática no banco devido ao @Transactional)
+    	anime.setName(nameSani);
+    	
+    	// Converte entidade atualizada para DTO de resposta e retorna
+    	return animeMapper.toAnimeResponse(anime);
+    }
+    
 }
 
 // ARQUITETURA EM CAMADAS:
@@ -127,11 +178,21 @@ public class AnimeServices {
 //    URL: POST /animes (JSON: {"name": "Naruto"})
 //    → sanitiza nome → converte DTO → salva → sanitiza resposta
 
+// 4. DELETAR:
+// 	  URL: DELETE /animes/{id}
+// 	  → busca por ID → verifica existência → remove → retorna DTO
+
+// 5. ATUALIZAR:
+// 	  URL: PUT /animes/{id}?newName=NovoNome
+// 	  → busca por ID → sanitiza novo nome → atualiza → retorna DTO
+
+
 // SEGURANÇA IMPLEMENTADA:
 // - Sanitização de strings (evita XSS)
 // - Validação de paginação (evita abusos)
 // - Validação de entrada (nomes inválidos)
 // - Sanitização de saída (dados retornados)
+// 	- Transações para consistência de dados
 
 // OBSERVAÇÕES:
 // 1. O método save() poderia validar se anime já existe
@@ -145,3 +206,4 @@ public class AnimeServices {
 // - Sanitização de dados
 // - Validação de entrada
 // - Paginação para performance
+// - Uso de transações para operações de atualização

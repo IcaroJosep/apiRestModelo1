@@ -11,25 +11,26 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-// Imports do projeto - classes de domínio, serviços e utilitários
-import __SpringBoot2.__star_Spring_io.dominio.Anime;
+import __SpringBoot2.__star_Spring_io.requests.AnimePutRequestBody;
 import __SpringBoot2.__star_Spring_io.requests.AnimePostRequestBody;
+import __SpringBoot2.__star_Spring_io.requests.AnimeResponse;
 import __SpringBoot2.__star_Spring_io.services.AnimeServices;
 import __SpringBoot2.__star_Spring_io.util.DateUtil;
-
 // Jakarta Validation - para validação de dados de entrada
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-
 // Lombok - gera código automaticamente (construtores, logs)
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -58,12 +59,12 @@ public class AnimeComtroller {
     // ENDPOINT 1: Listar todos os animes (com paginação)
     // GET /animes
     @GetMapping
-    public ResponseEntity<Page<Anime>> list(Pageable pageable) {
+    public ResponseEntity<Page<AnimeResponse>> list(Pageable pageable) {
         // Loga a data/hora da requisição (para monitoramento)
         log.info(dateUtil.formatLocalDataTimeToDatabaseStyle(LocalDateTime.now()));
         
         // Chama serviço para obter lista paginada de animes
-        Page<Anime> listAnime = animeServices.listAll(pageable);
+        Page<AnimeResponse> listAnime = animeServices.listAll(pageable);
         
         // Retorna HTTP 200 OK com a lista no corpo da resposta
         return ResponseEntity.ok(listAnime);
@@ -72,11 +73,10 @@ public class AnimeComtroller {
     // ENDPOINT 2: Buscar animes por nome (com validações)
     // GET /animes/findByName?name=Naruto&comtem=false
     @GetMapping(path = "findByName")
-    public ResponseEntity<Page<Anime>> list(
+    public ResponseEntity<Page<AnimeResponse>> list(
             // Pageable: Spring fornece automaticamente paginação via parâmetros:
             // ?page=0&size=10&sort=nome,asc
             Pageable pageable,
-            
             // @RequestParam: parâmetro da URL (?name=valor)
             // Validações aplicadas:
             @RequestParam 
@@ -85,13 +85,12 @@ public class AnimeComtroller {
             @Pattern(regexp = "^[a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ\\s\\-._]*$", 
                      message = "Caracteres inválidos no nome")  // Caracteres permitidos (regex)
             String name,
-            
             // Parâmetro opcional com valor padrão false
             @RequestParam(defaultValue = "false") 
             boolean comtem  // Flag para tipo de busca (contém/exato)
     ) {
         // Chama serviço de busca com os parâmetros
-        Page<Anime> listAnime = animeServices.findByName(pageable, name, comtem);
+        Page<AnimeResponse> listAnime = animeServices.findByName(pageable, name, comtem);
         
         return ResponseEntity.ok(listAnime);
     }
@@ -99,18 +98,31 @@ public class AnimeComtroller {
     // ENDPOINT 3: Criar novo anime
     // POST /animes
     @PostMapping
-    public ResponseEntity<Anime> save(
+    public ResponseEntity<AnimeResponse> save(
             // @RequestBody: dados vem no corpo da requisição (JSON)
             // @Valid: valida o objeto usando anotações da classe AnimePostRequestBody
             @RequestBody @Valid AnimePostRequestBody animePostRequestBody) {
         
         // Chama serviço para salvar o anime
-        Anime animeSalvo = animeServices.save(animePostRequestBody);
+        AnimeResponse animeSalvo = animeServices.save(animePostRequestBody);
         
         // Retorna HTTP 201 CREATED com o anime salvo no corpo
         // Diferente do HTTP 200 OK, 201 indica criação bem-sucedida
         return new ResponseEntity<>(animeSalvo, HttpStatus.CREATED);
     }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<AnimeResponse> delete(@PathVariable Long id){
+    	return ResponseEntity.ok(animeServices.deleteById(id));
+    }
+    
+    @PutMapping
+    public ResponseEntity<AnimeResponse> update(@RequestBody @Valid AnimePutRequestBody animePutRequestBody){
+    	
+    	return ResponseEntity.ok(animeServices.updateByName(animePutRequestBody.getId(),animePutRequestBody.getName()));
+    }
+    
+    
 }
 
 // RESUMO DOS ENDPOINTS:

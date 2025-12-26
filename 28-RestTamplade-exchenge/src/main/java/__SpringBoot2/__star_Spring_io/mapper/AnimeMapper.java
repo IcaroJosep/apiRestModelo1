@@ -3,12 +3,15 @@ package __SpringBoot2.__star_Spring_io.mapper;
 
 // Importações do MapStruct - framework de mapeamento objeto-objeto
 import org.mapstruct.Mapper;
-import org.mapstruct.factory.Mappers;
+import org.mapstruct.Mapping;
 
 // Importações das classes que serão convertidas
 import __SpringBoot2.__star_Spring_io.dominio.Anime;
 import __SpringBoot2.__star_Spring_io.requests.AnimePostRequestBody;
 import __SpringBoot2.__star_Spring_io.requests.AnimePutRequestBody;
+import __SpringBoot2.__star_Spring_io.requests.AnimeResponse;	
+
+
 
 // Anotação @Mapper do MapStruct
 // componentModel="spring" torna esta interface um bean gerenciado pelo Spring
@@ -19,7 +22,14 @@ public interface AnimeMapper {
     Anime toAnime(AnimePostRequestBody animePostRequestBody);
     
     // Converte AnimePutRequestBody para entidade Anime
+    
     Anime toAnime(AnimePutRequestBody animePutRequestBody);
+    
+    @Mapping(
+            target = "name",
+            expression = "java(__SpringBoot2.__star_Spring_io.seguranca.Sanatizador.saniString(anime.getName()))"
+    )
+    AnimeResponse toAnimeResponse(Anime anime);
 }
 
 // ALTERNATIVA SEM SPRING (instância manual):

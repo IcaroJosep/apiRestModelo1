@@ -22,6 +22,9 @@ public interface AnimeRepository extends JpaRepository<Anime, Long> {
     // ========== BUSCA PAGINADA POR NOME (EXATO) ==========
     // Retorna página de animes cujo nome é EXATAMENTE igual ao fornecido
     Page<Anime> findByName(String name, Pageable pageable);
+    
+    
+    
 }
 
 // CONCEITO: REPOSITORY PATTERN
