@@ -26,7 +26,9 @@ public interface AnimeMapper {
     Anime toAnime(AnimePutRequestBody animePutRequestBody);
     
     @Mapping(
+    		//onde vou salvar em dto
             target = "name",
+            //oq irei salvar em name dto.
             expression = "java(__SpringBoot2.__star_Spring_io.seguranca.Sanatizador.saniString(anime.getName()))"
     )
     AnimeResponse toAnimeResponse(Anime anime);
