@@ -1,6 +1,7 @@
 package __SpringBoot2.__star_Spring_io.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +41,7 @@ class AnimeRepositoryTest {
 
 	@Nested
 	@DisplayName("Save-testes")
-	class SaveTast {
+	class Save {
 
 		@Test
 		@DisplayName("persiste anime com sucesso quando dados validos")
@@ -159,4 +160,55 @@ class AnimeRepositoryTest {
 			
 		}
 	}
+	
+	@Nested
+	@DisplayName("delete - testes")
+	class delete{
+		
+		@Test
+		@DisplayName("remove entidade no banco apartir de uma entidade fornecida quando bem sucedido")
+		void delete_RemovesEntityFromDatabase_WhenTheProvidedEntityWasFound() {
+			Optional<Anime> obj = animeRepository.findById(1l);
+			
+			Assertions.assertThat(obj).isNotEmpty();
+			
+			Anime animeToDelete =obj.get();
+			
+			animeRepository.delete(animeToDelete);
+			
+			Optional<Anime> animeVerify = animeRepository.findById(animeToDelete.getId());
+			
+			Assertions.assertThat(animeVerify).isEmpty();
+		}
+		
+		@Test
+		@DisplayName("Não altera o banco de dados ao tentar deletar uma entidade com ID inexistente")
+		void  delete_DoesNotChangeDatabase_WhenEntityIdNotFound() {
+			long countBefore = animeRepository.count();
+			
+			animeRepository.delete(Anime.builder().name("kaka").id(99L).build());
+			
+			long countAfter = animeRepository.count();
+			
+			Assertions.assertThat(countBefore).isEqualTo(countAfter);
+			
+		}
+		
+	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

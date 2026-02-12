@@ -49,6 +49,9 @@ public class Sanatizador {
         if (textoPuro.length() > 100) {
             textoPuro = textoPuro.substring(0, 100);
         }
+        if (textoPuro.isEmpty()) {
+        	textoPuro = "CARACTERES OU SIMBOLOS INPROPRIOS";
+        }
         
         return textoPuro;
     }
